@@ -1,0 +1,10 @@
+{
+  "name": "qa-tc-workflow-mica2",
+  "owner": { "name": "pasitl-svg" },
+  "description": "QA Test Case Workflow (MICA2) for Claude Code",
+  "plugins": [
+    { "name": "qa-tc-workflow-mica2", "source": "./", "version": "0.1.0",
+      "description": "TC from Jira ticket — technique, traceability matrix, regression impact, security, prod safety",
+      "category": "qa" }
+  ]
+}
