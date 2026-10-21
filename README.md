@@ -1,6 +1,6 @@
 # qa-tc-workflow-mica2
 
-QA Test Case Workflow (MICA2) สำหรับ Claude Code — สร้าง Test Case จาก Jira ticket ครบวงจร ตั้งแต่อ่าน requirement จนส่งมอบ TC ที่พร้อมส่งลูกค้า
+QA Test Case Workflow (MICA2) สำหรับ Claude Code และ Claude Desktop — สร้าง Test Case จาก Jira ticket ครบวงจร ตั้งแต่อ่าน requirement จนส่งมอบ TC ที่พร้อมส่งลูกค้า
 
 ## ความสามารถของ skill
 
@@ -22,13 +22,14 @@ QA Test Case Workflow (MICA2) สำหรับ Claude Code — สร้าง
 
 ## สิ่งที่ต้องมีก่อนใช้
 
-- Claude Code
-- Atlassian Rovo MCP (อ่าน Jira / Confluence)
-- Google Drive MCP (อ่านและอัปโหลด Master Suite / Status Doc)
-- Python 3 + `openpyxl` (`pip install openpyxl`)
-- Figma MCP (ไม่บังคับ — ถ้าไม่มี skill จะขอ screenshot หรือคำอธิบาย UI แทน)
+| สิ่งที่ต้องมี | Claude Code | Claude Desktop |
+|---|---|---|
+| Atlassian Rovo (อ่าน Jira / Confluence) | เชื่อมเป็น MCP server หรือ connector ของบัญชี claude.ai | เปิด connector Atlassian ใน Settings → Connectors |
+| Google Drive (อ่านและอัปโหลด Master Suite / Status Doc) | เชื่อมเป็น MCP server หรือ connector ของบัญชี claude.ai | เปิด connector Google Drive ใน Settings → Connectors |
+| Python 3 + `openpyxl` (สร้างไฟล์ xlsx) | ติดตั้งในเครื่อง `pip install openpyxl` | ไม่ต้องติดตั้ง ใช้ sandbox ของ Code execution (มี `openpyxl` อยู่แล้ว) |
+| Figma (ไม่บังคับ) | Figma MCP | connector Figma — ถ้าไม่มี skill จะขอ screenshot หรือคำอธิบาย UI แทน |
 
-## วิธีติดตั้ง
+## ติดตั้งใน Claude Code
 
 เลือกแบบใดแบบหนึ่ง **อย่าติดตั้งทั้งสองแบบพร้อมกัน** เพราะ skill จะซ้ำกัน ติดตั้งเสร็จแล้วให้ restart Claude Code
 
@@ -41,7 +42,12 @@ QA Test Case Workflow (MICA2) สำหรับ Claude Code — สร้าง
 /plugin install qa-tc-workflow-mica2@qa-tc-workflow-mica2
 ```
 
-อัปเดตเวอร์ชันใหม่ด้วย `/plugin marketplace update qa-tc-workflow-mica2`
+อัปเดตเวอร์ชันใหม่:
+
+```
+/plugin marketplace update qa-tc-workflow-mica2
+/plugin update qa-tc-workflow-mica2@qa-tc-workflow-mica2
+```
 
 ### แบบ B: clone repo
 
@@ -53,13 +59,50 @@ cd qa-tc-workflow-mica2
 
 สคริปต์จะสร้าง symlink เข้า `~/.claude/skills` (ถ้ามีโฟลเดอร์ชื่อเดียวกันอยู่แล้ว จะเปลี่ยนชื่อเป็น `.bak-<เวลา>` เก็บไว้ ไม่ลบ) หลังจากนี้แค่ `git pull` skill ก็อัปเดตตามทันที
 
+### ตรวจว่าติดตั้งสำเร็จ
+
+พิมพ์ `/` ใน Claude Code แล้วต้องเห็น `qa-tc-workflow-mica2` ในรายการ
+
+## ติดตั้งใน Claude Desktop
+
+Claude Desktop (และ claude.ai บนเว็บ) ติดตั้ง skill ด้วยการอัปโหลดไฟล์ ZIP ไม่ใช้ plugin และ skill ที่อัปโหลดจะใช้ได้กับบัญชีนั้นทั้งบน Desktop และเว็บ
+
+### 1. สร้างไฟล์ ZIP
+
+ต้องสร้างจากสคริปต์ เพราะ `SKILL.md` ใน repo เป็นแค่ stub ที่ลิงก์ไปยัง `WORKFLOW.md` ซึ่งจะหาไม่เจอถ้าอัปโหลดแยก สคริปต์จะรวมเป็น `SKILL.md` ไฟล์เดียวพร้อมโฟลเดอร์ `references/`
+
+```
+git clone https://github.com/pasitl-svg/qa-tc-workflow-mica2.git
+cd qa-tc-workflow-mica2
+./scripts/build-desktop-zip.sh
+```
+
+ได้ไฟล์ `dist/qa-tc-workflow-mica2.zip`
+
+### 2. เปิดใช้ Code execution
+
+Settings → Capabilities → เปิด **Code execution and file creation** (skill ต้องใช้สร้างไฟล์ xlsx) — ถ้าเป็นบัญชี Team / Enterprise ผู้ดูแลองค์กรต้องเปิดให้ใช้ Skills ก่อน
+
+### 3. อัปโหลด skill
+
+Settings → Capabilities → หัวข้อ **Skills** → **Upload skill** → เลือกไฟล์ `qa-tc-workflow-mica2.zip` แล้วตรวจว่าสวิตช์ของ skill เปิดอยู่ (ชื่อเมนูอาจต่างกันเล็กน้อยตามเวอร์ชันของแอป)
+
+### 4. เปิด connector
+
+Settings → Connectors → เชื่อม **Atlassian** และ **Google Drive** (และ Figma ถ้ามี) แล้วเปิดใช้ connector เหล่านี้ในแชตที่จะใช้ skill
+
+### อัปเดตเวอร์ชันใหม่
+
+`git pull` → รัน `./scripts/build-desktop-zip.sh` ใหม่ → ใน Settings → Capabilities → Skills ลบ skill เดิมแล้วอัปโหลด ZIP ใหม่
+
 ## วิธีใช้งาน
 
 ### เรียกใช้ skill
 
-- แบบ clone: พิมพ์ `/qa-tc-workflow-mica2`
-- แบบ plugin: พิมพ์ `/qa-tc-workflow-mica2:qa-tc-workflow-mica2`
-- หรือพิมพ์คำขอตามปกติ แล้ว skill จะทำงานเอง เช่น
+- Claude Code แบบ clone: พิมพ์ `/qa-tc-workflow-mica2`
+- Claude Code แบบ plugin: พิมพ์ `/qa-tc-workflow-mica2:qa-tc-workflow-mica2`
+- Claude Desktop: พิมพ์คำขอในแชตตามปกติ แล้ว Claude จะเลือกใช้ skill เอง
+- ทุกแบบพิมพ์คำขอตามปกติได้ เช่น
 
 ```
 เขียน TC จาก ticket MICA2-123
@@ -86,7 +129,8 @@ cd qa-tc-workflow-mica2
 
 ```
 .claude-plugin/                            # plugin manifest
-scripts/link-skills.sh                     # ติดตั้งแบบ clone
+scripts/link-skills.sh                     # ติดตั้งแบบ clone (Claude Code)
+scripts/build-desktop-zip.sh               # สร้าง ZIP สำหรับ Claude Desktop
 skills/
 ├── qa-tc-workflow-mica2/SKILL.md          # discovery stub
 └── procedures/
