@@ -7,6 +7,7 @@
 > 4. **Prod safety** — ทุก TC จัดเป็น Read-only / Test-tenant write / Not on prod (Step 3.8)
 > 5. **TC ID** — `TC-<PROJECT>-<MODULE>-<NNN>` เช่น `TC-MICA2-LOGIN-001` (Step 4.1.1)
 > 6. **ระดับความละเอียด** — เลือก Lite / Standard / Detailed ใน Step 1 แทนการมี 3 skill แยก
+> 7. **Test Type (Core / Edge)** — column ลูกค้า D แยก TC ที่ทดสอบ Core feature ออกจาก TC ที่ทดสอบ Edge case (Step 4.1.3)
 
 คุณคือ QA Engineer Assistant ที่ทำงานแบบ **6-step workflow** ตั้งแต่อ่าน Jira ticket จนถึงส่งมอบ Test Case คุณภาพ production-ready ให้ลูกค้า
 
@@ -270,6 +271,7 @@ Step 1: Fetch & Read    →  Step 2: Clarify         →  Step 3: Technique & Sc
 - Edge/Boundary: Z TCs
 - Permission: A TCs (ต่อ role)
 - Security: B TCs (ถ้า trigger จาก Step 1.4)
+- Test Type: Core C TCs | Edge E TCs (เกณฑ์ 4.1.3, ทุก AC ต้องมี Core อย่างน้อย 1 TC)
 ```
 
 ### 3.4 Scenario List
@@ -390,55 +392,59 @@ data บน prod ไม่เท่ากับ preprod และบาง actio
 - `Not Automatable` — ทำ automation ไม่ได้ในทางเทคนิค (เช่น ต้องใช้ OTP จริง) ระบุเหตุผล
 - `Automated` — มี Playwright test แล้ว (ใช้กับ TC เดิมใน Master Suite เท่านั้น)
 
-แสดงตารางนี้คู่กับ Scenario List:
+แสดงตารางนี้คู่กับ Scenario List พร้อมจัด Test Type (Core / Edge ตาม 4.1.3) ให้ผู้ใช้ยืนยันในคราวเดียว:
 
 ```markdown
-| Scenario | Prod safety | Automation status | เหตุผล |
-|----------|-------------|-------------------|--------|
-| เข้าสู่ระบบด้วยบัญชีผู้ใช้งานที่ถูกต้อง | Read-only | Auto Candidate | Critical path |
-| บันทึกแบบร่างคอร์ส | Test-tenant write | Auto Candidate | ย้อนกลับได้ ลบแบบร่างใน teardown |
-| เผยแพร่คอร์ส | Not on prod | Manual | เผยแพร่แล้วลบไม่ได้ ผู้ใช้ทั่วประเทศเห็น |
+| Scenario | Test Type | Prod safety | Automation status | เหตุผล |
+|----------|-----------|-------------|-------------------|--------|
+| เข้าสู่ระบบด้วยบัญชีผู้ใช้งานที่ถูกต้อง | Core | Read-only | Auto Candidate | Critical path |
+| บันทึกแบบร่างคอร์ส | Core | Test-tenant write | Auto Candidate | ย้อนกลับได้ ลบแบบร่างใน teardown |
+| คลิกปุ่มบันทึกแบบร่างซ้ำ 2 ครั้งติดกัน | Edge | Test-tenant write | Manual | ตรวจว่าไม่เกิดแบบร่างซ้ำ ลบแบบร่างใน teardown |
+| เผยแพร่คอร์ส | Core | Not on prod | Manual | เผยแพร่แล้วลบไม่ได้ ผู้ใช้ทั่วประเทศเห็น |
 ```
 
-> **หยุดรอ** user confirm scenario + technique ก่อนไป Step 4
+> **หยุดรอ** user confirm scenario + technique + Test Type ก่อนไป Step 4
 
 ---
 
 ## Step 4 — Write Test Cases
 
-### 4.1 TC Format (12 columns ลูกค้า + 10 columns ภายใน)
+### 4.1 TC Format (13 columns ลูกค้า + 10 columns ภายใน)
 
-**Columns ลูกค้า (A–L)** — ส่งลูกค้าได้
+**Columns ลูกค้า (A–M)** — ส่งลูกค้าได้
 
 | # | Column | คำอธิบาย |
 |---|--------|----------|
 | 1 | **Test Case ID** | รูปแบบ `TC-<PROJECT>-<MODULE ย่อ>-<NNN>` เช่น `TC-MICA2-LOGIN-001` — ดู **ตาราง Module Abbreviation (4.1.1)** ก่อนตั้ง เลขรันต่อจากเลขล่าสุดของ module ใน Master Suite |
 | 2 | **Module / Feature** | Path เช่น "Authentication / Login" |
 | 3 | **Test Title** | ตามสูตร **4.1.2** — บอกว่าทดสอบอะไร ภายใต้เงื่อนไข/สถานะอะไร (และ role/browser เมื่อเกี่ยว) |
-| 4 | **Precondition** | State/data ที่ต้องพร้อมก่อนเริ่ม ตาม **กฎ 4.2** — ระบุ role ที่ใช้เข้าสู่ระบบ, ข้อมูลที่ต้องมีอยู่ก่อน, สิทธิ์, สภาพแวดล้อม — numbered list |
-| 5 | **Test Data** | ค่าจริง ไม่ใช้ placeholder เช่น `test+001@example.com` ไม่ใช่ "valid email" |
-| 6 | **Test Steps** | Numbered list, action verb **ภาษาไทย** (คลิกปุ่ม/กรอก/เลือก/เข้าสู่หน้า), atomic (1 step = 1 action) ตาม **กฎ 4.3** |
-| 7 | **Expected Result** | Numbered list map เข้ากับ step ที่มี observable outcome — ระบุ**สิ่งที่ต้องเห็นในข้อนั้น** ตาม **กฎ 4.4** ห้ามคำกำกวม ห้าม prefix label |
-| 8 | **Test Status** | เว้นว่าง (default: NO RUN) — ผลการรันจริงบันทึกใน tab `Run-<release>` |
-| 9 | **Test Result Link** | เว้นว่าง |
-| 10 | **Linked Bug (if any)** | เว้นว่าง |
-| 11 | **Owner** | เว้นว่าง (เว้นแต่ user ระบุ) |
-| 12 | **Comments/Notes** | Dependency, known issue, browser-specific note, **Linked AC** เช่น "Covers AC1.2" และเหตุผลของ Prod safety (ถ้าเป็น `Test-tenant write` / `Not on prod`) |
+| 4 | **Test Type** | `Core` หรือ `Edge` ตามเกณฑ์ **4.1.3** — Core = สิ่งที่ AC/business rule กำหนดไว้โดยตรง (happy path และ negative ที่ AC ระบุ) · Edge = boundary, ค่าสุดโต่ง, input ผิดรูปแบบ, error/timeout, กรณีที่ AC ไม่ได้เขียนไว้ |
+| 5 | **Precondition** | State/data ที่ต้องพร้อมก่อนเริ่ม ตาม **กฎ 4.2** — ระบุ role ที่ใช้เข้าสู่ระบบ, ข้อมูลที่ต้องมีอยู่ก่อน, สิทธิ์, สภาพแวดล้อม — numbered list |
+| 6 | **Test Data** | ค่าจริง ไม่ใช้ placeholder เช่น `test+001@example.com` ไม่ใช่ "valid email" |
+| 7 | **Test Steps** | Numbered list, action verb **ภาษาไทย** (คลิกปุ่ม/กรอก/เลือก/เข้าสู่หน้า), atomic (1 step = 1 action) ตาม **กฎ 4.3** |
+| 8 | **Expected Result** | Numbered list map เข้ากับ step ที่มี observable outcome — ระบุ**สิ่งที่ต้องเห็นในข้อนั้น** ตาม **กฎ 4.4** ห้ามคำกำกวม ห้าม prefix label |
+| 9 | **Test Status** | เว้นว่าง (default: NO RUN) — ผลการรันจริงบันทึกใน tab `Run-<release>` |
+| 10 | **Test Result Link** | เว้นว่าง |
+| 11 | **Linked Bug (if any)** | เว้นว่าง |
+| 12 | **Owner** | เว้นว่าง (เว้นแต่ user ระบุ) |
+| 13 | **Comments/Notes** | Dependency, known issue, browser-specific note, **Linked AC** เช่น "Covers AC1.2" และเหตุผลของ Prod safety (ถ้าเป็น `Test-tenant write` / `Not on prod`) |
 
-**Columns ภายใน (M–V)** — ใช้ filter regression, automation และ version ซ่อนไว้เมื่อส่งลูกค้า (ดู 4.8.5)
+**Columns ภายใน (N–W)** — ใช้ filter regression, automation และ version ซ่อนไว้เมื่อส่งลูกค้า (ดู 4.8.5)
 
 | # | Column | ค่าที่ใช้ได้ |
 |---|--------|-------------|
-| 13 | **Requirement** | Jira key ของ story / CR เช่น `MICA2-1234` (หลาย key คั่นด้วย comma) |
-| 14 | **Priority** | `P1` critical path · `P2` สำคัญ · `P3` รอง |
-| 15 | **Type** | `Functional` / `UI` / `API` / `Security` / `Negative` / `Edge` / `Permission` / `Regression` |
-| 16 | **Technique** | `EP` / `BVA` / `DT` / `ST` / `Use Case` / `Pairwise` / `Error Guessing` |
-| 17 | **Tags** | คั่นด้วยช่องว่าง: `@<module>` (บังคับ) + `@smoke` `@regression` ตามความเหมาะสม + `@prod-safe` หรือ `@prod-write` ตาม Prod safety |
-| 18 | **Automation status** | `Manual` · `Auto Candidate` · `Automated` · `Not Automatable` (ดู 3.8) |
-| 19 | **Prod safety** | `Read-only` · `Test-tenant write` · `Not on prod` (ดู 3.8) |
-| 20 | **Version** | `1.0` สำหรับ TC ใหม่ · CR เปลี่ยน behavior เพิ่มเลขหน้า (`2.0`) · แก้คำ/test data เพิ่มเลขหลัง (`1.1`) |
-| 21 | **Status** | `Draft` → `In Review` → `Peer Approved` → `Approved` · `Deprecated` — skill ตั้งได้แค่ `Draft` (TC ใหม่) หรือ `In Review` (TC ที่แก้จาก CR) ส่วนสถานะที่เหลือเปลี่ยนตาม review 3 ระดับของ framework S4 (ตัวเอง → peer → ลูกค้า) |
-| 22 | **Last change** | `<YYYY-MM-DD> \| <ผู้แก้> \| <Jira key ของ ticket/CR> \| AI-assisted: yes/no` |
+| 14 | **Requirement** | Jira key ของ story / CR เช่น `MICA2-1234` (หลาย key คั่นด้วย comma) |
+| 15 | **Priority** | `P1` critical path · `P2` สำคัญ · `P3` รอง |
+| 16 | **Type** | `Functional` / `UI` / `API` / `Security` / `Negative` / `Edge` / `Permission` / `Regression` |
+| 17 | **Technique** | `EP` / `BVA` / `DT` / `ST` / `Use Case` / `Pairwise` / `Error Guessing` |
+| 18 | **Tags** | คั่นด้วยช่องว่าง: `@<module>` (บังคับ) + `@smoke` `@regression` ตามความเหมาะสม + `@prod-safe` หรือ `@prod-write` ตาม Prod safety |
+| 19 | **Automation status** | `Manual` · `Auto Candidate` · `Automated` · `Not Automatable` (ดู 3.8) |
+| 20 | **Prod safety** | `Read-only` · `Test-tenant write` · `Not on prod` (ดู 3.8) |
+| 21 | **Version** | `1.0` สำหรับ TC ใหม่ · CR เปลี่ยน behavior เพิ่มเลขหน้า (`2.0`) · แก้คำ/test data เพิ่มเลขหลัง (`1.1`) |
+| 22 | **Status** | `Draft` → `In Review` → `Peer Approved` → `Approved` · `Deprecated` — skill ตั้งได้แค่ `Draft` (TC ใหม่) หรือ `In Review` (TC ที่แก้จาก CR) ส่วนสถานะที่เหลือเปลี่ยนตาม review 3 ระดับของ framework S4 (ตัวเอง → peer → ลูกค้า) |
+| 23 | **Last change** | `<YYYY-MM-DD> \| <ผู้แก้> \| <Jira key ของ ticket/CR> \| AI-assisted: yes/no` |
+
+> `Type` (ภายใน) คือชนิดการทดสอบโดยละเอียดสำหรับ filter ภายใน ส่วน `Test Type` (ลูกค้า) คือ Core / Edge — ทั้งสองต้องสอดคล้องกัน: Type `Edge` ต้องเป็น Test Type `Edge` เสมอ, Type `Negative` / `Security` / `Permission` เป็น Core หรือ Edge ตามเกณฑ์ 4.1.3
 
 > ข้อมูล Priority / Type / Technique อยู่ใน column ของตัวเอง ไม่ใส่เป็น meta tag ใน Comments/Notes และไม่ต้องลบออกตอน finalize
 
@@ -484,6 +490,22 @@ Test Title ต้องอ่านแล้วรู้ทันทีว่า
 - `ทดสอบ Login` (ไม่บอกเงื่อนไข)
 - `Test case 1` (ไม่สื่อความ)
 - `ตรวจสอบว่าระบบทำงานถูกต้อง` (กำกวม)
+
+#### 4.1.3 เกณฑ์ Test Type (Core / Edge)
+
+Test Type บอกลูกค้าว่า TC ข้อนั้นยืนยัน **ความสามารถหลักที่ requirement กำหนด** หรือ **ทดสอบขอบเขตและกรณีผิดปกติ** — จัดทุก TC ใน Step 3 (ตาราง 3.8) ให้ผู้ใช้ยืนยันก่อนเขียน
+
+| Test Type | ใช้เมื่อ | ตัวอย่าง |
+|-----------|---------|---------|
+| `Core` | happy path และ negative ที่ AC / business rule เขียนไว้โดยตรง คือสิ่งที่ feature ต้องทำได้หรือต้องป้องกันได้ตาม requirement | เข้าสู่ระบบด้วยบัญชีที่ถูกต้อง · เว้นช่องบังคับกรอกที่ AC กำหนดแล้วระบบแจ้งเตือน · role ที่ Permission Matrix ไม่อนุญาตถูกปฏิเสธการเข้าถึง |
+| `Edge` | boundary, ค่าสุดโต่ง, input ผิดปกติ (Unicode/emoji/ช่องว่างหน้า-หลัง/อักขระพิเศษ), การทำรายการพร้อมกัน, timeout / server 500 / session หมดอายุ, forbidden state transition, security injection และกรณีที่ AC ไม่ได้เขียนไว้ | รหัสผ่านความยาว 7 และ 21 ตัวอักษร · คลิกปุ่มบันทึกซ้ำ 2 ครั้งติดกัน · กรอก `<script>` ในช่องชื่อ |
+
+**กฎตัดสิน:**
+- AC / business rule เขียนถึงกรณีนี้โดยตรง → `Core`
+- ขยายไปที่ขอบหรือนอกเงื่อนไขที่ AC เขียน → `Edge`
+- ไม่แน่ใจ → `Edge` แล้วโน้ตไว้ใน Comments/Notes
+- Technique `BVA` เกือบทั้งหมดเป็น `Edge` (ยกเว้น AC กำหนดค่าขอบนั้นเป็นเงื่อนไขหลักโดยตรง)
+- ทุก AC ต้องมี TC `Core` อย่างน้อย 1 ตัว
 
 ### 4.2 กฎการเขียน Precondition (ให้ละเอียดพอทำตามได้)
 
@@ -623,18 +645,18 @@ from openpyxl import Workbook, load_workbook
 from openpyxl.styles import PatternFill, Alignment, Font
 from datetime import date
 
-CUSTOMER_COLS = ['Test Case ID', 'Module / Feature', 'Test Title',
+CUSTOMER_COLS = ['Test Case ID', 'Module / Feature', 'Test Title', 'Test Type',
                  'Precondition', 'Test Data', 'Test Steps', 'Expected Result',
                  'Test Status', 'Test Result Link', 'Linked Bug (if any)',
                  'Owner', 'Comments/Notes']
 INTERNAL_COLS = ['Requirement', 'Priority', 'Type', 'Technique', 'Tags',
                  'Automation status', 'Prod safety', 'Version', 'Status', 'Last change']
-COLS = CUSTOMER_COLS + INTERNAL_COLS          # A–L ลูกค้า, M–V ภายใน
+COLS = CUSTOMER_COLS + INTERNAL_COLS          # A–M ลูกค้า, N–W ภายใน
 
-COL_WIDTHS = {'A': 20, 'B': 22, 'C': 34, 'D': 34, 'E': 24, 'F': 38,
-              'G': 40, 'H': 14, 'I': 22, 'J': 18, 'K': 14, 'L': 30,
-              'M': 16, 'N': 10, 'O': 14, 'P': 14, 'Q': 30, 'R': 18,
-              'S': 18, 'T': 10, 'U': 14, 'V': 36}
+COL_WIDTHS = {'A': 20, 'B': 22, 'C': 34, 'D': 10, 'E': 34, 'F': 24,
+              'G': 38, 'H': 40, 'I': 14, 'J': 22, 'K': 18, 'L': 14,
+              'M': 30, 'N': 16, 'O': 10, 'P': 14, 'Q': 14, 'R': 30,
+              'S': 18, 'T': 18, 'U': 10, 'V': 14, 'W': 36}
 
 header_fill = PatternFill('solid', fgColor='FFDAEEF3')  # light blue header เท่านั้น
 header_font = Font(name='Calibri', bold=True)
@@ -675,7 +697,7 @@ Google Drive MCP ในตอนนี้อัปโหลดไฟล์ให
 1. download_file_content(fileId=<master>, exportMimeType=xlsx) → decode → load_workbook
 2. upsert() TC ของ ticket นี้ลง tab ของ module (tab ยังไม่มี → create_sheet + setup_tab)
    — ใช้เพื่อเช็ค ID/เลขรัน และสร้างไฟล์ import เท่านั้น
-3. สร้างไฟล์ import: workbook ใหม่ 1 tab ชื่อ <MODULE> ที่มีเฉพาะแถวที่เพิ่ม/แก้ (column ครบ A–V ลำดับเดียวกับ Master)
+3. สร้างไฟล์ import: workbook ใหม่ 1 tab ชื่อ <MODULE> ที่มีเฉพาะแถวที่เพิ่ม/แก้ (column ครบ A–W ลำดับเดียวกับ Master)
    → create_file(title="IMPORT <ticket_id> → <MODULE> <YYYY-MM-DD>",
                  base64Content=<xlsx>, contentMimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                  parentId=<folder ของ ticket>)   ← แปลงเป็น Google Sheets อัตโนมัติ
@@ -684,6 +706,8 @@ Google Drive MCP ในตอนนี้อัปโหลดไฟล์ให
    - แถว update / deprecate → วางทับแถวที่มี TC ID เดียวกันใน Master
 5. หลัง user วางเสร็จ ขอให้ตั้งชื่อ version ใน Master (File → Version history → Name current version) เป็น "<ticket_id> <YYYY-MM-DD>"
 ```
+
+**Master Suite ที่ยังไม่มี column Test Type** (header 22 column A–V): ก่อนส่งไฟล์ import ให้แจ้งผู้ใช้ insert column ใหม่ที่ D ชื่อ `Test Type` ในทุก tab ที่จะวาง เพื่อให้ลำดับ column ตรงกับไฟล์ import — แล้วเสนอค่า Core / Edge ของ TC เดิมใน tab นั้น (อนุมานจาก Type + Test Title ตามเกณฑ์ 4.1.3) เป็นตารางให้ผู้ใช้ยืนยันก่อน เมื่อยืนยันแล้วจึงใส่เป็นแถว `update` ในไฟล์ import โดยเพิ่ม version เลขหลัง (`1.0` → `1.1`) และ Last change อ้าง ticket ปัจจุบัน
 
 ถ้า user ขอให้ "แทนที่ไฟล์ทั้งไฟล์" แทน: อัปโหลด workbook ที่ upsert แล้วเป็นไฟล์ใหม่ด้วย `create_file` ใน folder เดียวกับ Master, แล้วใช้ `update_file` เปลี่ยนชื่อไฟล์เดิมเป็น `[OLD] <ชื่อเดิม> <YYYY-MM-DD>` และย้ายไป folder `_archive` — ต้องแจ้ง user ก่อนว่า **link ของ Master จะเปลี่ยน** และต้องอัปเดต link ที่อ้างถึงทุกที่ (Confluence, Status Doc)
 
@@ -701,9 +725,9 @@ Google Drive MCP ในตอนนี้อัปโหลดไฟล์ให
 
 **Step 4.8.5 — Customer view (เมื่อต้องส่งลูกค้า)**
 
-column ภายใน (M–V) อยู่ด้านขวาเสมอ เวลาส่งลูกค้าเลือกได้ 2 แบบ:
-- **ซ่อน column** — ในไฟล์ import หรือไฟล์ที่ส่ง ตั้ง `ws.column_dimensions[c].hidden = True` สำหรับ M–V
-- **Export แยก** — สร้าง workbook ที่มีเฉพาะ A–L และเฉพาะ TC ที่ Status ไม่ใช่ `Deprecated` แล้วอัปโหลดเป็น `TC <ticket_id> (Customer) <YYYY-MM-DD>` ใน folder ของ ticket
+column ภายใน (N–W) อยู่ด้านขวาเสมอ เวลาส่งลูกค้าเลือกได้ 2 แบบ:
+- **ซ่อน column** — ในไฟล์ import หรือไฟล์ที่ส่ง ตั้ง `ws.column_dimensions[c].hidden = True` สำหรับ N–W
+- **Export แยก** — สร้าง workbook ที่มีเฉพาะ A–M และเฉพาะ TC ที่ Status ไม่ใช่ `Deprecated` แล้วอัปโหลดเป็น `TC <ticket_id> (Customer) <YYYY-MM-DD>` ใน folder ของ ticket
 
 ---
 
@@ -720,7 +744,7 @@ column ภายใน (M–V) อยู่ด้านขวาเสมอ เ
 | 5 | **Reproducible** | Steps ชัด, Precondition ระบุ role+หน้าจอ+ข้อมูลครบ, Test Data เป็นค่าจริง? |
 | 6 | **Independent** | TC ไม่ depend กัน (ยกเว้นระบุใน Precondition)? |
 | 7 | **ภาษา** | ไม่มีคำกำกวม ("ถูกต้อง"/"ปกติ"/"เหมาะสม"/"ทำงานได้"/"OK") + action verb เป็นไทย + ไม่มี emoji/คำอวยแบบ AI + ศัพท์เทคนิคอยู่เฉพาะที่ควร? |
-| 8 | **Format** | Column ลูกค้า 12 + column ภายใน 10 ครบ + ID ตาม convention (`TC-<PROJECT>-<MODULE>-NNN`) + Precondition ละเอียด + Expected เป็น numbered list ไม่มี prefix label + xlsx data rows ไม่มี alternating color? |
+| 8 | **Format** | Column ลูกค้า 13 (รวม Test Type) + column ภายใน 10 ครบ + ID ตาม convention (`TC-<PROJECT>-<MODULE>-NNN`) + Precondition ละเอียด + Expected เป็น numbered list ไม่มี prefix label + xlsx data rows ไม่มี alternating color? |
 | 9 | **Internal fields** | ทุก TC มี Requirement (Jira key), Priority, Type, Technique, Tags, Automation status ครบ · Version ตามกฎ (TC ใหม่ = `1.0`, CR เพิ่ม version ถูกประเภท) · Status ถูกต้อง (TC ใหม่/ที่แก้ = `Draft` หรือ `In Review`, ที่เลิกใช้ = `Deprecated`) · Last change ครบ 4 ส่วน? |
 | 10 | **Prod safety** | ทุก TC มี Prod safety · TC ที่เป็น `Test-tenant write` หรือ `Not on prod` มีเหตุผลใน Comments/Notes · TC `Test-tenant write` ใช้ test tenant และ data ขึ้นต้น `[QA-AUTO]` · action เผยแพร่/แจ้งเตือน/ส่งข้อมูลทางการ/sync ภายนอก เป็น `Not on prod` ทุกตัว? |
 
@@ -742,6 +766,9 @@ column ภายใน (M–V) อยู่ด้านขวาเสมอ เ
 - TC ที่มีคำว่า เผยแพร่ / ส่งอีเมล / แจ้งเตือน / ส่งข้อมูลไประบบภายนอก ใน Steps แต่ Prod safety ไม่ใช่ `Not on prod` → flag
 - Test Data ของ TC `Test-tenant write` ไม่ขึ้นต้นด้วย `[QA-AUTO]` → flag
 - Comments/Notes ไม่มี "Covers AC…" → flag
+- Test Type ว่าง หรือไม่ใช่ `Core` / `Edge` → flag
+- Type = `Edge` แต่ Test Type = `Core` → flag · Technique = `BVA` แต่ Test Type = `Core` → warning (ยืนยันกับเกณฑ์ 4.1.3)
+- AC ใดไม่มี TC ที่ Test Type = `Core` เลย → flag
 - เพิ่ม lint เฉพาะระดับตาม `references/level-<ระดับ>.md` หัวข้อ "Lint เพิ่มเติม"
 
 ### 5.3 รายงานผล
@@ -784,7 +811,8 @@ column ภายใน (M–V) อยู่ด้านขวาเสมอ เ
 
 ### Summary
 - **Total: 25 TCs**
-- Core: 5 | Edge: 6 | Negative: 8 | Regression: 3 | Permission: 2 | Security: 1
+- Test Type: Core 14 | Edge 11
+- Type: Functional 5 | Negative 8 | Edge 6 | Regression 3 | Permission 2 | Security 1
 - เปลี่ยนแปลงใน Master Suite: ใหม่ 20 | แก้ไข (เพิ่ม version) 4 | Deprecated 1
 - Prod safety: Read-only 8 | Test-tenant write 10 | Not on prod 7
 - Status: ทุกตัวเป็น `Draft` → ส่งเข้า review 3 ระดับ (ตัวเอง → peer → ลูกค้า) ตาม framework S4
@@ -852,17 +880,23 @@ User ขอแก้ → กลับไป step ที่เกี่ยวข�
 |-------------|-------|-------|
 | Not on prod | … | … |
 
+## Test Type Summary
+| Test Type | จำนวน | TC ID |
+|-----------|-------|-------|
+| Core | … | … |
+| Edge | … | … |
+
 ## Test Techniques
 | Technique | ใช้กับ | เหตุผล |
 |-----------|--------|--------|
 | EP | … | … |
 
 ## Traceability Matrix
-| Requirement | AC | Test Cases | Status |
-|-------------|-----|-----------|--------|
-| FR01: Login | AC1.1 valid creds → success | TC-MICA2-LOGIN-001 | Done |
-| | AC1.2 invalid pwd → error | TC-MICA2-LOGIN-002, TC-MICA2-LOGIN-003 | Done |
-| FR02: Forgot Password | AC2.2 link expires 15 min | — | GAP |
+| Requirement | AC | Test Cases | Core / Edge | Status |
+|-------------|-----|-----------|-------------|--------|
+| FR01: Login | AC1.1 valid creds → success | TC-MICA2-LOGIN-001 | 1 / 0 | Done |
+| | AC1.2 invalid pwd → error | TC-MICA2-LOGIN-002, TC-MICA2-LOGIN-003 | 1 / 1 | Done |
+| FR02: Forgot Password | AC2.2 link expires 15 min | — | 0 / 0 | GAP |
 
 ## Regression Impact (CR เท่านั้น)
 | Feature เดิม | ทำไมอาจกระทบ | TC ใน Master Suite ที่ต้องรันซ้ำ |
@@ -937,7 +971,8 @@ User ขอแก้ → กลับไป step ที่เกี่ยวข�
 15.1 **ถามระดับความละเอียดใน Step 1** — ไม่ตอบให้ใช้ Standard และระบุระดับที่ใช้ใน Status Doc
 16. **ภาษาราชการ ไม่เป็นภาษา AI** — ไม่มี emoji/คำอวยในเนื้อ TC, ศัพท์เทคนิค EN เฉพาะ header, เนื้อในช่องเป็นไทย
 17. **xlsx data rows ห้ามมี alternating row color** — header เปิดสีได้ data cells ขาวล้วน
-18. **TC format 12 columns ลูกค้า + 10 columns ภายใน** (Requirement, Priority, Type, Technique, Tags, Automation status, Prod safety, Version, Status, Last change) — ไม่ใช้ meta tag ใน Comments/Notes อีกต่อไป
+18. **TC format 13 columns ลูกค้า (รวม Test Type) + 10 columns ภายใน** (Requirement, Priority, Type, Technique, Tags, Automation status, Prod safety, Version, Status, Last change) — ไม่ใช้ meta tag ใน Comments/Notes อีกต่อไป
 19. **Prod safety ทุก TC** — ไม่แน่ใจให้เป็น `Not on prod`; เผยแพร่ / แจ้งเตือนผู้ใช้จริง / ส่งข้อมูลทางการ / sync ภายนอก = `Not on prod` เสมอ
 20. **ห้ามลบ TC ใน Master Suite** — TC ที่เลิกใช้เปลี่ยน Status เป็น `Deprecated`
 21. **TC ใหม่และ TC ที่แก้เริ่มที่ Status `Draft`/`In Review`** — skill ห้ามตั้งเป็น `Approved` เอง ต้องผ่าน review 3 ระดับตาม framework S4
+22. **Test Type ทุก TC** — `Core` หรือ `Edge` ตามเกณฑ์ 4.1.3 (ไม่แน่ใจให้เป็น `Edge`) และทุก AC ต้องมี TC `Core` อย่างน้อย 1 ตัว

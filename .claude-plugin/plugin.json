@@ -1,6 +1,6 @@
 {
   "name": "qa-tc-workflow-mica2",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "QA Test Case Workflow (MICA2) — TC from Jira ticket with technique, traceability, regression impact, CR versioning, Lite/Standard/Detailed levels",
   "author": { "name": "pasitl-svg" },
   "keywords": ["qa", "test-case", "jira", "regression"],

@@ -15,7 +15,7 @@ QA Test Case Workflow (MICA2) สำหรับ Claude Code — สร้าง
 - **Master Regression Suite** — เขียน TC ลง Google Sheets ไฟล์เดียวต่อ product (1 tab ต่อ module) ไม่สร้างไฟล์ TC ใหม่ทุก ticket
 - **รองรับ Change Request (CR)** — วิเคราะห์ Regression Impact แล้วแก้ TC เดิมในแถวเดิมพร้อมเพิ่ม version หรือตั้งเป็น Deprecated
 - **ครอบคลุมด้านอื่น** — Permission/Role Matrix (ระบบหลาย role), Security considerations, Prod safety (Read-only / Test-tenant write / Not on prod) และ Automation status ทุก TC
-- **รูปแบบมาตรฐาน** — TC ID แบบ `TC-<PROJECT>-<MODULE>-<NNN>` (เช่น `TC-MICA2-LOGIN-001`) มี column สำหรับลูกค้า 12 ตัว และ column ภายใน 10 ตัว
+- **รูปแบบมาตรฐาน** — TC ID แบบ `TC-<PROJECT>-<MODULE>-<NNN>` (เช่น `TC-MICA2-LOGIN-001`) มี column สำหรับลูกค้า 13 ตัว (รวม Test Type ที่แยก Core / Edge) และ column ภายใน 10 ตัว
 - **เลือกระดับความละเอียดได้** — `Lite` (กระชับ), `Standard` (ค่าเริ่มต้น), `Detailed` (ละเอียดสูงสุด เหมาะกับงานที่ต้อง audit)
 - **Status Report** — Google Doc บน Drive อัปเดตทุก step พร้อม Traceability Matrix
 - **ภาษาราชการ** — เขียน TC เป็นภาษาไทยทางการ พร้อมส่งลูกค้าหรือหน่วยงาน

@@ -2,7 +2,7 @@
 
 เน้นกระชับ อ่านเร็ว — รวม step ที่ต่อเนื่องเป็นหน่วยเดียวได้ และ Expected Result ระบุเฉพาะจุดตรวจสำคัญ (ไม่ต้อง map ทุก step) เหมาะกับ requirement ที่ชัดเจนและ tester ที่คุ้นระบบอยู่แล้ว
 
-**สิ่งที่ยังบังคับเท่ากับระดับอื่น:** TC ID format, สูตร Test Title, Precondition ต้องระบุ role+หน้าจอ+ข้อมูล, ภาษาราชการ/action verb ไทย, ห้ามคำกำกวม, Negative+Edge ≥ Happy, coverage/traceability, column ภายในครบ, Prod safety
+**สิ่งที่ยังบังคับเท่ากับระดับอื่น:** TC ID format, สูตร Test Title, Precondition ต้องระบุ role+หน้าจอ+ข้อมูล, ภาษาราชการ/action verb ไทย, ห้ามคำกำกวม, Negative+Edge ≥ Happy, coverage/traceability, column ลูกค้า 13 (รวม Test Type Core/Edge) และ column ภายในครบ, Prod safety
 
 ## Test Steps
 
